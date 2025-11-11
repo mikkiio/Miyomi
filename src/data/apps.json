@@ -116,9 +116,9 @@
     "platforms": ["Android"],
     "iconColor": "#66BB6A",
     "logoUrl": "https://avatars.githubusercontent.com/KotatsuApp",
-    "keywords": ["local library", "kotatsu"],
+    "keywords": ["local library", "kotatsu", "manga"],
     "supportedExtensions": [],
-    "lastUpdated": "2025-10-16",
+    "lastUpdated": "2025-11-11",
     "githubUrl": "https://github.com/KotatsuApp/Kotatsu",
     "discordUrl":"https://discord.gg/NNJ5RgVBC5",
     "officialSite":"https://kotatsu.app/"
