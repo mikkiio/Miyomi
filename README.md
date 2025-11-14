@@ -53,7 +53,7 @@ Navigate to `src/data/apps.json` and add or update app entries:
 ```
 
 **Important:**
-- `status`: Optional; accepted values like `"discontinued"`, `"abandoned"`, `"suspended"`, `"dmca"`, `"dead"` render a badge beside the app name so users know its current lifecycle state. Use lowercase strings; custom labels will be title-cased automatically. Leave this field out for actively maintained apps.
+- `status`: Optional; accepted values like `"active", "discontinued"`, `"abandoned"`, `"suspended"`, `"dmca"`, `"dead"` render a badge beside the app name so users know its current lifecycle state. Use lowercase strings; custom labels will be title-cased automatically. Leave this field out for actively maintained apps.
 - `author`: Optional; shown in the UI. Falls back to the GitHub repo owner if omitted.
 - `githubUrl`: If provided, the app will fetch live release data from GitHub
 - `lastUpdated`: Acts as fallback when GitHub API is unavailable
@@ -154,6 +154,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+### Important Disclaimers
+- Miyomi is an **independent, fan-run** information hub
+- We are **not affiliated** with any third-party developers or companies
+- All external links are for **educational purposes only**
+- We do **not** host, distribute, or modify copyrighted content
+
+### Key Legal Points
+- **Non-Affiliation**: Not connected to any third-party projects we reference
+- **Educational Purpose**: All content provided for informational use only
+- **User Responsibility**: Users verify legality of third-party services
+- **Content Moderation**: We reserve right to remove inappropriate content
+- **Liability Limitation**: Not responsible for third-party services
+
+
 
 ## 🙏 Acknowledgment
 
@@ -165,3 +179,8 @@ limitations under the License.
 **Made with ❤️ for the otaku community**
 
 *Found a bug? Have a suggestion? [Open an issue](https://github.com/tas33n/miyomi/issues) or contribute directly!*
+
+
+[![Terms of Service](https://img.shields.io/badge/Terms_of_Service-Read_Here-blue?style=for-the-badge)](https://miyomi-tos.netlify.app/)
+[![Privacy Policy](https://img.shields.io/badge/Privacy_Policy-Read_Here-green?style=for-the-badge)](https://miyomi-tos.netlify.app/privacy.html)
+[![Contact](https://img.shields.io/badge/Contact-Email_Us-red?style=for-the-badge)](mailto:miyomi.hub@gmail.com)

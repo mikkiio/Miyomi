@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft, Download, Github, MessageSquare, Globe, PlayCircle, BookOpen } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from "framer-motion";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PlatformBadge } from '../components/PlatformBadge';
 import { TagBadge } from './../components/TagBadge';
@@ -19,7 +19,20 @@ type StatusStyle = {
   border: string;
 };
 
+type Props = {
+  size?: number;          // overall badge size (px)
+  color?: string;         // core/hint color
+  duration?: number;      // seconds per pulse
+  scaleTo?: number;       // how large the halo grows
+  ring?: boolean;         // true = ring outline, false = filled halo
+  seamless?: boolean;     // add a second staggered halo to hide loop edge
+  className?: string;
+  title?: string;
+  "aria-label"?: string;
+};
+
 const STATUS_STYLE_MAP: Record<string, StatusStyle> = {
+  active: { bg: 'rgba(76, 175, 80, 0.12)', text: '#4CAF50', border: 'rgba(76, 175, 80, 0.35)' },
   discontinued: { bg: 'rgba(255, 99, 71, 0.15)', text: '#FF6347', border: 'rgba(255, 99, 71, 0.4)' },
   abandoned: { bg: 'rgba(255, 193, 7, 0.15)', text: '#FFB300', border: 'rgba(255, 193, 7, 0.4)' },
   suspended: { bg: 'rgba(156, 39, 176, 0.15)', text: '#9C27B0', border: 'rgba(156, 39, 176, 0.35)' },
@@ -27,7 +40,106 @@ const STATUS_STYLE_MAP: Record<string, StatusStyle> = {
   dead: { bg: 'rgba(158, 158, 158, 0.15)', text: '#9E9E9E', border: 'rgba(158, 158, 158, 0.35)' },
 };
 
+const ActiveHaloPulseDot: React.FC<Props> = ({
+  size = 20,
+  color = "#4CAF50",
+  duration = 1.8,
+  scaleTo = 2.6,
+  ring = true,
+  seamless = false,
+  className = "",
+  title = "Active",
+  "aria-label": ariaLabel = "Active",
+}) => {
+  const core = Math.round(size * 0.8);
+
+  return (
+    <span
+      className={`relative inline-flex items-center justify-center ml-2 ${className}`}
+      role="status"
+      aria-label={ariaLabel}
+      title={title}
+      style={
+        {
+          ["--size" as any]: `${size}px`,
+          ["--core" as any]: `${core}px`,
+          ["--color" as any]: color,
+          ["--dur" as any]: `${duration}s`,
+          ["--scaleTo" as any]: scaleTo,
+          // halo visuals
+          ["--haloOpacity" as any]: 0.55,   // start alpha
+          ["--haloThickness" as any]: ring ? "2px" : "0px",
+          ["--haloFill" as any]: ring ? "transparent" : "currentColor",
+          ["margin-left" as any]: "8px",
+        } as React.CSSProperties
+      }
+    >
+      {/* solid center dot */}
+      <span
+        className="absolute rounded-full"
+        style={{ width: core, height: core, backgroundColor: color, zIndex: 2 }}
+      />
+
+      {/* single outward pulse halo */}
+      <span className="halo absolute rounded-full" />
+
+      {/* optional staggered halo for seamless loop */}
+      {seamless && <span className="halo halo--stagger absolute rounded-full" />}
+
+      {/* SR-only label */}
+      <span
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        {ariaLabel}
+      </span>
+
+      <style jsx>{`
+        .halo {
+          width: var(--core);
+          height: var(--core);
+          color: var(--color);
+          background: var(--haloFill);
+          border: var(--haloThickness) solid currentColor;
+          border-radius: 9999px;
+          opacity: var(--haloOpacity);
+          transform: scale(1);
+          transform-origin: center;
+          will-change: transform, opacity;
+          pointer-events: none;
+
+          animation: halo var(--dur) linear infinite;
+          animation-fill-mode: both;
+        }
+        .halo--stagger {
+          animation-delay: calc(var(--dur) / 2); /* phase shift for seamlessness */
+        }
+
+        @keyframes halo {
+          0%   { transform: scale(1);             opacity: var(--haloOpacity); }
+          100% { transform: scale(var(--scaleTo)); opacity: 0; }
+        }
+
+        /* Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .halo, .halo--stagger { animation: none; opacity: 0; }
+        }
+      `}</style>
+    </span>
+  );
+};
+
 const STATUS_LABEL_MAP: Record<string, string> = {
+  active: 'Active',
   discontinued: 'Discontinued',
   abandoned: 'Abandoned',
   suspended: 'Suspended',
@@ -70,10 +182,10 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
   const hasMoreExtensions = recommendedExtensions.length > displayedExtensions.length;
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Mobile detection for different animation approach
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  
+
   // Fetch GitHub release data
   const { release, loading: releaseLoading } = useGitHubRelease(
     app?.githubUrl,
@@ -118,27 +230,42 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
     return null;
   }, [app]);
 
-  const statusBadge = React.useMemo(() => {
-    if (!app?.status) return null;
-    const normalized = app.status.trim().toLowerCase();
-    const style = STATUS_STYLE_MAP[normalized] ?? DEFAULT_STATUS_STYLE;
-    return {
-      label: getStatusLabel(app.status),
-      style,
-    };
+  const statusBadge = React.useMemo<React.ReactNode>(() => {
+    const s = app?.status?.trim().toLowerCase();
+    if (!s) return null;
+
+    if (s === 'active') {
+      return <ActiveHaloPulseDot size={20} color="#22c55e" duration={2.0} />
+    }
+
+    const style = STATUS_STYLE_MAP[s] ?? DEFAULT_STATUS_STYLE;
+    return (
+      <span
+        className="inline-flex items-center rounded-full border px-3 py-1 text-xs uppercase tracking-wide"
+        style={{
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          backgroundColor: style.bg,
+          color: style.text,
+          borderColor: style.border,
+        }}
+      >
+        {getStatusLabel(app.status)}
+      </span>
+    );
   }, [app?.status]);
 
   const handleBackClick = () => {
     const scrollPos = location.state?.previousScrollPosition;
-    
+
     if (onNavigate) {
       onNavigate('/software');
     } else {
-      navigate('/software', { 
+      navigate('/software', {
         state: { restoreScrollPosition: scrollPos }
       });
     }
-    
+
     // Restore scroll position immediately
     if (scrollPos !== undefined) {
       // Use requestAnimationFrame to ensure DOM is ready
@@ -152,7 +279,7 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
 
   if (!app) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -349,7 +476,7 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
     : 'lg:grid lg:grid-cols-[auto,minmax(0,1fr)]';
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -374,9 +501,9 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
         initial={isMobile ? { opacity: 0, x: 20 } : false}
         animate={isMobile ? { opacity: 1, x: 0 } : false}
         exit={isMobile ? { opacity: 0, x: -20 } : false}
-        transition={isMobile ? { duration: 0.2, ease: "easeOut" } : { 
-          type: "spring", 
-          stiffness: 260, 
+        transition={isMobile ? { duration: 0.2, ease: "easeOut" } : {
+          type: "spring",
+          stiffness: 260,
           damping: 35,
           mass: 0.8
         }}
@@ -410,20 +537,7 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
               >
                 {app.name}
               </h1>
-              {statusBadge && (
-                <span
-                  className="inline-flex items-center rounded-full border px-3 py-1 font-['Inter',sans-serif] text-xs uppercase tracking-wide"
-                  style={{
-                    fontWeight: 600,
-                    letterSpacing: '0.08em',
-                    backgroundColor: statusBadge.style.bg,
-                    color: statusBadge.style.text,
-                    borderColor: statusBadge.style.border,
-                  }}
-                >
-                  {statusBadge.label}
-                </span>
-              )}
+              {statusBadge}
             </div>
             {authorInfo && (
               <p
@@ -537,13 +651,13 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
                 <Github className="w-4 h-4" />
               </a>
             </div>
-            
+
             <GitHubReleaseNotes
               notes={release.notes}
               releaseUrl={release.url}
               maxLines={10}
             />
-            
+
             <GitHubDownloadAssets assets={release.assets} releaseUrl={release.url} />
           </div>
         </div>
@@ -640,6 +754,7 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
         </div>
       )}
       {/* Support Section */}
+      {/*
       <div className="bg-[var(--bg-elev-1)] rounded-2xl p-6 text-center">
         <h3 className="text-[var(--text-primary)] font-['Poppins',sans-serif] mb-2" style={{ fontSize: '18px', fontWeight: 600 }}>
           Need Help?
@@ -668,6 +783,7 @@ export function AppDetailPage({ appId, onNavigate }: AppDetailPageProps) {
           </button>
         </div>
       </div>
+      */}
     </motion.div>
   );
 }
